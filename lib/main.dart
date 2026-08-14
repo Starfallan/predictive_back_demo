@@ -23,6 +23,12 @@ class DemoApp extends StatelessWidget {
 
 /// Mimics routing packages (e.g. GetX) whose routes never run a secondary
 /// animation for the route below.
+///
+/// Note that `MaterialPageRoute(fullscreenDialog: true)` also makes the
+/// previous route's `canTransitionTo` return false, but fullscreen dialogs
+/// can't be popped by a predictive back gesture at all
+/// (`PageRoute.popGestureEnabled`), so an override like this is the minimal
+/// way to trigger the bug.
 class NoSecondaryAnimationPageRoute<T> extends MaterialPageRoute<T> {
   NoSecondaryAnimationPageRoute({required super.builder});
 
@@ -38,27 +44,11 @@ class PageA extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Page A (root)')),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: <Widget>[
-            FilledButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const PageB(pushFullscreenDialog: true),
-                ),
-              ),
-              child: const Text('Scenario 1: fullscreenDialog on top'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).push(
-                NoSecondaryAnimationPageRoute<void>(
-                  builder: (_) => const PageB(pushFullscreenDialog: false),
-                ),
-              ),
-              child: const Text('Scenario 2: canTransitionTo => false'),
-            ),
-          ],
+        child: FilledButton(
+          onPressed: () => Navigator.of(context).push(
+            NoSecondaryAnimationPageRoute<void>(builder: (_) => const PageB()),
+          ),
+          child: const Text('Open page B'),
         ),
       ),
     );
@@ -66,9 +56,7 @@ class PageA extends StatelessWidget {
 }
 
 class PageB extends StatelessWidget {
-  const PageB({super.key, required this.pushFullscreenDialog});
-
-  final bool pushFullscreenDialog;
+  const PageB({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +72,7 @@ class PageB extends StatelessWidget {
             children: <Widget>[
               FilledButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    fullscreenDialog: pushFullscreenDialog,
-                    builder: (_) => const PageC(),
-                  ),
+                  MaterialPageRoute<void>(builder: (_) => const PageC()),
                 ),
                 child: const Text('Push page C'),
               ),
@@ -96,7 +81,9 @@ class PageB extends StatelessWidget {
                 '2. Pop it with a predictive back gesture from the RIGHT edge '
                 'and let it commit (page C correctly moves LEFT).\n'
                 '3. Back here, gesture again from the RIGHT edge: this page '
-                'moves RIGHT (wrong direction).',
+                'moves RIGHT (wrong direction).\n'
+                'Only the first gesture is affected - repeat from step 1 '
+                'to trigger it again.',
               ),
             ],
           ),

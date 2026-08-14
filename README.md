@@ -2,8 +2,8 @@
 
 Minimal reproduction for a Flutter framework bug: **the predictive back page
 transition animates toward the wrong side** after popping a route that the
-route below can't transition to (`canTransitionTo == false`, e.g. a
-`fullscreenDialog`, or routes from routing packages such as GetX).
+route below can't transition to (`canTransitionTo == false`, which is what
+routes from routing packages such as GetX return).
 
 Tracking issue: `[FLUTTER ISSUE URL]`
 
@@ -17,20 +17,25 @@ Tracking issue: `[FLUTTER ISSUE URL]`
 
 ## Steps to reproduce
 
-1. Launch the app, tap **Scenario 1** (page B is a plain `MaterialPageRoute`).
-2. On page B, tap **Push page C** (page C is a
-   `MaterialPageRoute(fullscreenDialog: true)`).
+1. Launch the app, tap **Open page B**. Page B is pushed with a
+   `MaterialPageRoute` subclass whose `canTransitionTo` returns `false`
+   (mimicking GetX-style routing packages).
+2. On page B, tap **Push page C** (a plain `MaterialPageRoute`).
 3. Pop page C with a predictive back gesture from the **right** edge and let it
    commit → page C correctly moves **left**, away from the finger.
 4. On page B, start another predictive back gesture from the **right** edge.
 
 **Expected:** page B moves left, like page C did.
-**Actual:** page B moves **right**, toward the finger. Every following gesture
-on page B keeps the inverted direction.
+**Actual:** page B moves **right**, toward the finger. Only the first gesture
+after the pop is affected (the gesture itself rebuilds the transition subtree
+and clears the stale state) — repeat from step 2 to trigger it again. Gestures
+from the left edge look correct because the stale direction coincides with the
+left-edge direction.
 
-**Scenario 2** shows the same bug without `fullscreenDialog`: page B is pushed
-via a route whose `canTransitionTo` returns `false` (what GetX-style routing
-packages do) and page C is a plain `MaterialPageRoute`.
+Note: `MaterialPageRoute(fullscreenDialog: true)` on top also gives the route
+below `canTransitionTo == false`, but fullscreen dialogs can't be popped by a
+predictive gesture at all (`PageRoute.popGestureEnabled` excludes them), so the
+`canTransitionTo` override is the minimal trigger.
 
 ## Building
 
