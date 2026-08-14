@@ -49,9 +49,5 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
-Built with Flutter `3.44.8` (pinned in `pubspec.yaml`, used by CI via
-`flutter-version-file`).
+First built with Flutter `3.44.8` ,and test that `3.47.0` have the same issue, New built with `3.47.0` (pinned in `pubspec.yaml`, used by CI via `flutter-version-file`).
 
-Note: this repo intentionally contains no gradle wrapper and no launcher
-icons; the Flutter tool regenerates the wrapper on first build, and the app
-uses the system default icon.
